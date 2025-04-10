@@ -178,3 +178,12 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig)
+
+
+# Add credit sentence
+st.markdown(
+    """
+---
+This tool was created by Francisco Torres Herrador, Assistant Professor at New Mexico State University, 2025.
+"""
+)
