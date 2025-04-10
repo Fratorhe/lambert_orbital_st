@@ -106,6 +106,8 @@ x_obj2, y_obj2 = compute_position_at_true_anomaly(a2, e2, omega2, nu_desired)
 # Compute Lambert's problem
 r1_vec = np.array([x_obj1, y_obj1, 0])
 r2_vec = np.array([x_obj2, y_obj2, 0])
+st.text(f"r1 is {r1_vec} km")
+st.text(f"r2 is {r2_vec} km")
 
 prograde = True
 
