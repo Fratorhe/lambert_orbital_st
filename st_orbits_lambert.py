@@ -95,8 +95,8 @@ prograde = True
 
 lambert_problem = LambertAlgorithm(r1_vec, r2_vec, delta_time, mu, prograde)
 v1, v2 = lambert_problem.solve_it()
-st.text(f"Velocity in 1 is {v1}")
-st.text(f"Velocity in 2 is {v2}")
+st.text(f"Transfer velocity in 1 is {v1}")
+st.text(f"Transfer velocity in 2 is {v2}")
 
 # compute the transfer orbit
 _, e_tr, _, _, w_tr, _, _, a_tr = compute_elements(r1_vec, v1, mu)
