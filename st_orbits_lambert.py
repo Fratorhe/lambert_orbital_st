@@ -5,11 +5,19 @@ from orbit_elements_and_state_vector import compute_elements
 
 from lamberts_problem import LambertAlgorithm
 
+np.set_printoptions(precision=4)
+
 DICT_BODIES = {
     "Earth": {"mu": 398600.4418, "radius": 6371.0},
     "Mars": {"mu": 42828.3, "radius": 3389.5},
     "Sun": {"mu": 132712440041.939, "radius": 695700.0},
 }
+
+ORBIT_1_COLOR = "blue"
+ORBIT_2_COLOR = "green"
+ORBIT_TR_COLOR = "purple"
+DELTA_V_COLOR = "pink"
+ARROWSIZE = 1
 
 
 # Orbital equation in polar coordinates
@@ -33,6 +41,14 @@ def compute_position_at_true_anomaly(a, e, omega_deg, nu_deg):
     x = r * np.cos(theta)
     y = r * np.sin(theta)
     return x, y
+
+
+def compute_velocity_at_true_anomaly(a, e, nu_deg, mu):
+    h = np.sqrt(mu * a * (1 - e**2))
+    nu = np.radians(nu_deg)
+    vx = -mu / h * np.sin(nu)
+    vy = mu / h * (e + np.cos(nu))
+    return np.array([vx, vy, 0])
 
 
 # Streamlit app
@@ -95,20 +111,21 @@ prograde = True
 
 lambert_problem = LambertAlgorithm(r1_vec, r2_vec, delta_time, mu, prograde)
 v1, v2 = lambert_problem.solve_it()
-st.text(f"Transfer velocity in 1 is {v1}")
-st.text(f"Transfer velocity in 2 is {v2}")
+st.text(f"Vtr 1 is {v1} km/s")
+st.text(f"Vtr 2 is {v2} km/s")
 
 # compute the transfer orbit
 _, e_tr, _, _, w_tr, _, _, a_tr = compute_elements(r1_vec, v1, mu)
 x_tr, y_tr = compute_orbit(a_tr, e_tr, w_tr * 180 / np.pi)
-print(w_tr)
 
 # Create Plotly figure
 fig = go.Figure()
 
 # Plot orbit 1
 fig.add_trace(
-    go.Scatter(x=x1, y=y1, mode="lines", name="Orbit 1", line=dict(color="blue"))
+    go.Scatter(
+        x=x1, y=y1, mode="lines", name="Orbit 1", line=dict(color="blue", dash="dashdot")
+    )
 )
 
 # Plot current satellite position
@@ -126,7 +143,9 @@ fig.add_trace(
 
 # Plot orbit 2
 fig.add_trace(
-    go.Scatter(x=x2, y=y2, mode="lines", name="Orbit 2", line=dict(color="green"))
+    go.Scatter(
+        x=x2, y=y2, mode="lines", name="Orbit 2", line=dict(color="green", dash="dash")
+    )
 )
 
 # Plot NEW satellite position
@@ -145,8 +164,132 @@ fig.add_trace(
 # Plot transfer orbit
 fig.add_trace(
     go.Scatter(
-        x=x_tr, y=y_tr, mode="lines", name="Orbit Transfer", line=dict(color="purple")
+        x=x_tr,
+        y=y_tr,
+        mode="lines",
+        name="Orbit Transfer",
+        line=dict(color="purple", dash="dash"),
     )
+)
+
+
+# Compute velocity vector components at current position
+v_current = compute_velocity_at_true_anomaly(a1, e1, nu_current, mu)
+st.text(f"	V at orbit 1 {v_current} km/s")
+v_desired = compute_velocity_at_true_anomaly(a2, e2, nu_desired, mu)
+st.text(f"	V at 0rbit 2 {v_desired} km/s")
+v_current_mag = np.linalg.norm(v_current)
+v_desired_mag = np.linalg.norm(v_desired)
+v1_mag = np.linalg.norm(v1)  # vmag_transfer orbit at 1
+v2_mag = np.linalg.norm(v2)  # vmag_transfer orbit at 2
+velocity_scale = (
+    planet_radius  # Scale factor to make the velocity vector visible on the plot
+)
+
+
+deltaV1 = v1 - v_current
+deltaV2 = v_desired - v2
+deltaV1_mag = np.linalg.norm(deltaV1)  # vmag_transfer orbit at 1
+deltaV2_mag = np.linalg.norm(deltaV2)  # vmag_transfer orbit at 2
+
+st.text(f"	ΔV1 {deltaV1} km/s")
+st.text(f"	ΔV2 {deltaV2} km/s")
+
+# Arrow velocity vector orbit 1
+fig.add_annotation(
+    x=x_obj1 + velocity_scale * v_current[0] / v_current_mag,
+    y=y_obj1 + velocity_scale * v_current[1] / v_current_mag,
+    ax=x_obj1,
+    ay=y_obj1,
+    xref="x",
+    yref="y",
+    axref="x",
+    ayref="y",
+    showarrow=True,
+    arrowhead=3,  # Arrowhead style (1=small, 3=large)
+    arrowsize=ARROWSIZE,  # Size of the arrow
+    arrowcolor=ORBIT_1_COLOR,
+)
+
+# Arrow velocity vector orbit 2
+fig.add_annotation(
+    x=x_obj2 + velocity_scale * v_desired[0] / v_desired_mag,
+    y=y_obj2 + velocity_scale * v_desired[1] / v_desired_mag,
+    ax=x_obj2,
+    ay=y_obj2,
+    xref="x",
+    yref="y",
+    axref="x",
+    ayref="y",
+    showarrow=True,
+    arrowhead=3,  # Arrowhead style (1=small, 3=large)
+    arrowsize=ARROWSIZE,  # Size of the arrow
+    arrowcolor=ORBIT_2_COLOR,
+)
+
+
+# Arrow velocity vector transfer orbit 1
+fig.add_annotation(
+    x=x_obj1 + velocity_scale * v1[0] / v1_mag,
+    y=y_obj1 + velocity_scale * v1[1] / v1_mag,
+    ax=x_obj1,
+    ay=y_obj1,
+    xref="x",
+    yref="y",
+    axref="x",
+    ayref="y",
+    showarrow=True,
+    arrowhead=3,  # Arrowhead style (1=small, 3=large)
+    arrowsize=1,  # Size of the arrow
+    arrowcolor=ORBIT_TR_COLOR,
+)
+
+# Arrow velocity vector transfer orbit 2
+fig.add_annotation(
+    x=x_obj2 + velocity_scale * v2[0] / v2_mag,
+    y=y_obj2 + velocity_scale * v2[1] / v2_mag,
+    ax=x_obj2,
+    ay=y_obj2,
+    xref="x",
+    yref="y",
+    axref="x",
+    ayref="y",
+    showarrow=True,
+    arrowhead=3,  # Arrowhead style (1=small, 3=large)
+    arrowsize=ARROWSIZE,  # Size of the arrow
+    arrowcolor=ORBIT_TR_COLOR,
+)
+
+# Arrow velocity DeltaV1
+fig.add_annotation(
+    x=x_obj1 + velocity_scale * v1[0] / v1_mag,
+    y=y_obj1 + velocity_scale * v1[1] / v1_mag,
+    ax=x_obj1 + velocity_scale * v_current[0] / v_current_mag,
+    ay=y_obj1 + velocity_scale * v_current[1] / v_current_mag,
+    xref="x",
+    yref="y",
+    axref="x",
+    ayref="y",
+    showarrow=True,
+    arrowhead=3,  # Arrowhead style (1=small, 3=large)
+    arrowsize=ARROWSIZE,  # Size of the arrow
+    arrowcolor=DELTA_V_COLOR,
+)
+
+# Arrow velocity deltaV2
+fig.add_annotation(
+    x=x_obj2 + velocity_scale * v_desired[0] / v_desired_mag,
+    y=y_obj2 + velocity_scale * v_desired[1] / v_desired_mag,
+    ax=x_obj2 + velocity_scale * v2[0] / v2_mag,
+    ay=y_obj2 + velocity_scale * v2[1] / v2_mag,
+    xref="x",
+    yref="y",
+    axref="x",
+    ayref="y",
+    showarrow=True,
+    arrowhead=3,  # Arrowhead style (1=small, 3=large)
+    arrowsize=ARROWSIZE,  # Size of the arrow
+    arrowcolor=DELTA_V_COLOR,
 )
 
 
