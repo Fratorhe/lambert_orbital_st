@@ -333,7 +333,7 @@ fig.update_layout(
 
 st.plotly_chart(fig)
 
-
+print("done")
 # Add credit sentence
 st.markdown(
     """
