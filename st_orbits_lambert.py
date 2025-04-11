@@ -1,7 +1,6 @@
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
-
 from lamberts_problem import LambertAlgorithm
 from orbit_elements_and_state_vector import compute_elements
 
@@ -9,7 +8,7 @@ np.set_printoptions(precision=4)
 
 DICT_BODIES = {
     "Earth": {"mu": 398600.4418, "radius": 6371.0, "z_guess": 0.0},
-    "Mars": {"mu": 42828.3, "radius": 3389.5},
+    "Mars": {"mu": 42828.3, "radius": 3389.5, "z_guess": 1},
     "Sun": {"mu": 132712440041.939, "radius": 695700.0, "z_guess": 20},
 }
 
