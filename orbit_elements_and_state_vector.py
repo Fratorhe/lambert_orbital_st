@@ -43,85 +43,21 @@ def compute_elements(r_vec, v_vec, mu):
     h = np.linalg.norm(h_vec)
     print(f"Angular momentum h is {h:.3e} km^2/s")
 
-    i = np.arccos(h_vec[2] / h)
-    print(f"Orbit inclination is {i:.3f} rad")
-    print(f"Orbit inclination is {i/to_rad:.3f} degrees")
-
-    if i > np.pi / 2:
-        print(f"Since i greater than 90 degrees, this is a retrograde orbit.")
-        print(f"Rotation of object is contrary to rotation of the body")
-    else:
-        print(f"Since i smaller than 90 degrees, this is a normal orbit.")
-        print(f"Rotation of object is same to rotation of the body.")
-
-    N_vec = np.cross([0, 0, 1], h_vec)
-    print(N_vec)
-
-    N = np.linalg.norm(N_vec)
-    print(f"{N:.3e}")
-
-    Omega = np.arccos(N_vec[0] / N)
-    # Omega is returned from [0, pi].
-    # However, we should check the quadrant based on N_Y
-    if N_vec[1] < 0:
-        print("y component of N is negative, therefore, we need to do 360-Omega")
-        Omega = 2 * np.pi - Omega
-    print(f"Omega is {Omega:.3f} rad")
-    print(f"Omega is {Omega/to_rad:.3f} degrees")
-
     e_vec = 1 / mu * ((v**2 - mu / r) * r_vec - r * v_r * v_vec)
     print(e_vec)
     e = np.linalg.norm(e_vec)
-    print(f"The eccentricity of the orbit is: {e:.3f}")
-    print_type_orbit(e)
 
-    # perigee argument
-    w = np.arccos(np.dot(N_vec, e_vec) / N / e)
-    if e_vec[2] < 0:
-        print("Solved ambiguity for periapsis")
-        w = 2 * np.pi - w
-    if i == 0:
-        w = arctan2(e_vec[1], e_vec[0])
-    print(f"The periapsis argument is {w:.3f} rad")
-    print(f"The periapsis argument is {w / to_rad:.3f} degrees")
+    w = arctan2(e_vec[1], e_vec[0])
 
     # true anomaly
     theta = np.arccos(np.dot(e_vec, r_vec) / e / r)
     if v_r < 0:
         print("Solved ambiguity for true anomaly")
         theta = 2 * np.pi - theta
-    print(f"The true anomaly is {theta:.3f} rad")
-    print(f"The true anomaly is {theta / to_rad:.3f} degrees")
 
     a = h**2 / mu / (1 - e**2)
 
-    return h, e, i, Omega, w, theta, mu, a
-
-
-def compute_state_vector(h, e, i, Omega, w, theta, mu, a):
-
-    r = h**2 / mu / (1 + e * cos(theta))
-    print(f"Distance is {r}km")
-
-    # We first get the perifocal coordinates
-    r_pf = np.array([r * cos(theta), r * sin(theta), 0])
-    v_pf = np.array([-mu / h * sin(theta), mu / h * (e + cos(theta)), 0])
-
-    print("The perifocal coordinates are: ")
-    print(f"{r_pf} km")
-    print(f"{v_pf} km/s")
-
-    R_Omega = rotz(-Omega)
-    R_incl = rotx(-i)
-    R_omega = rotz(-w)
-
-    r_vec = np.dot(np.dot(np.dot(R_Omega, R_incl), R_omega), r_pf)
-    v_vec = np.dot(np.dot(np.dot(R_Omega, R_incl), R_omega), v_pf)
-
-    print("The geocentric coordinates are: ")
-    print(f"{r_vec} km")
-    print(f"{v_vec} km/s")
-    return r_vec, v_vec, mu
+    return h, e, w, theta, a
 
 
 if __name__ == "__main__":

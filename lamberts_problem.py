@@ -36,6 +36,7 @@ class LambertAlgorithm:
     delta_time: float
     mu: float
     prograde: bool = True
+    z_guess: float = 0.0
 
     def __post_init__(self):
         if isinstance(self.r1_vec, list):
@@ -116,17 +117,11 @@ class LambertAlgorithm:
         return first_summand + second_summand
 
     def solve_z(self, z0):
+        print("Iterative solver for z")
         zsol = fsolve(self.F_fun, z0, fprime=self.F_fun_prime)
         self.z_solved = zsol[0]  # save the solution for later use in other methods
-        print(self.z_solved)
+        print("Iterative solver finished")
         return self.z_solved
-
-    def plot_F(self):
-        zS = np.linspace(-5, 5, num=50)
-        F_values = [self.F_fun(z) for z in zS]
-
-        plt.plot(zS, F_values)
-        plt.show()
 
     # LAGRANGE COEFFICIENTS
     @property
@@ -150,7 +145,7 @@ class LambertAlgorithm:
         return 1 / self.g_zsolved * (self.gdot_zsolved * self.r2_vec - self.r1_vec)
 
     def solve_it(self):
-        z0 = 0
+        z0 = self.z_guess
         self.solve_z(z0)
         return self.v1_vec, self.v2_vec
 

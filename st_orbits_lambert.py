@@ -1,16 +1,16 @@
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
-from orbit_elements_and_state_vector import compute_elements
 
 from lamberts_problem import LambertAlgorithm
+from orbit_elements_and_state_vector import compute_elements
 
 np.set_printoptions(precision=4)
 
 DICT_BODIES = {
-    "Earth": {"mu": 398600.4418, "radius": 6371.0},
+    "Earth": {"mu": 398600.4418, "radius": 6371.0, "z_guess": 0.0},
     "Mars": {"mu": 42828.3, "radius": 3389.5},
-    "Sun": {"mu": 132712440041.939, "radius": 695700.0},
+    "Sun": {"mu": 132712440041.939, "radius": 695700.0, "z_guess": 20},
 }
 
 ORBIT_1_COLOR = "blue"
@@ -18,6 +18,14 @@ ORBIT_2_COLOR = "green"
 ORBIT_TR_COLOR = "purple"
 DELTA_V_COLOR = "pink"
 ARROWSIZE = 1
+
+
+def perifocal_to_eci_equatorial(v_pqw, omega_deg):
+    omega = np.radians(omega_deg)
+    R_z = np.array(
+        [[np.cos(omega), -np.sin(omega), 0], [np.sin(omega), np.cos(omega), 0], [0, 0, 1]]
+    )
+    return R_z @ v_pqw
 
 
 # Orbital equation in polar coordinates
@@ -43,12 +51,14 @@ def compute_position_at_true_anomaly(a, e, omega_deg, nu_deg):
     return x, y
 
 
-def compute_velocity_at_true_anomaly(a, e, nu_deg, mu):
+def compute_velocity_at_true_anomaly(a, e, nu_deg, mu, omega_deg):
     h = np.sqrt(mu * a * (1 - e**2))
     nu = np.radians(nu_deg)
     vx = -mu / h * np.sin(nu)
     vy = mu / h * (e + np.cos(nu))
-    return np.array([vx, vy, 0])
+    v = np.array([vx, vy, 0])
+    v = perifocal_to_eci_equatorial(v, omega_deg)
+    return v
 
 
 # Streamlit app
@@ -110,14 +120,14 @@ st.text(f"r1 is {r1_vec} km")
 st.text(f"r2 is {r2_vec} km")
 
 prograde = True
-
-lambert_problem = LambertAlgorithm(r1_vec, r2_vec, delta_time, mu, prograde)
+zguess = DICT_BODIES[planet_selected]["z_guess"]
+lambert_problem = LambertAlgorithm(r1_vec, r2_vec, delta_time, mu, prograde, zguess)
 v1, v2 = lambert_problem.solve_it()
 st.text(f"Vtr 1 is {v1} km/s")
 st.text(f"Vtr 2 is {v2} km/s")
 
 # compute the transfer orbit
-_, e_tr, _, _, w_tr, _, _, a_tr = compute_elements(r1_vec, v1, mu)
+_, e_tr, w_tr, _, a_tr = compute_elements(r1_vec, v1, mu)
 x_tr, y_tr = compute_orbit(a_tr, e_tr, w_tr * 180 / np.pi)
 
 # Create Plotly figure
@@ -176,17 +186,15 @@ fig.add_trace(
 
 
 # Compute velocity vector components at current position
-v_current = compute_velocity_at_true_anomaly(a1, e1, nu_current, mu)
+v_current = compute_velocity_at_true_anomaly(a1, e1, nu_current, mu, omega1)
 st.text(f"	V at orbit 1 {v_current} km/s")
-v_desired = compute_velocity_at_true_anomaly(a2, e2, nu_desired, mu)
+v_desired = compute_velocity_at_true_anomaly(a2, e2, nu_desired, mu, omega2)
 st.text(f"	V at 0rbit 2 {v_desired} km/s")
 v_current_mag = np.linalg.norm(v_current)
 v_desired_mag = np.linalg.norm(v_desired)
 v1_mag = np.linalg.norm(v1)  # vmag_transfer orbit at 1
 v2_mag = np.linalg.norm(v2)  # vmag_transfer orbit at 2
-velocity_scale = (
-    planet_radius  # Scale factor to make the velocity vector visible on the plot
-)
+velocity_scale = a1 / 2  # Scale factor to make the velocity vector visible on the plot
 
 
 deltaV1 = v1 - v_current
@@ -196,6 +204,7 @@ deltaV2_mag = np.linalg.norm(deltaV2)  # vmag_transfer orbit at 2
 
 st.text(f"	ΔV1 {deltaV1} km/s")
 st.text(f"	ΔV2 {deltaV2} km/s")
+st.text(f"	z={lambert_problem.z_solved:.3f} ")
 
 # Arrow velocity vector orbit 1
 fig.add_annotation(
