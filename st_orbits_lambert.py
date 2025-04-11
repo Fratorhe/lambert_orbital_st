@@ -203,6 +203,7 @@ deltaV2_mag = np.linalg.norm(deltaV2)  # vmag_transfer orbit at 2
 
 st.text(f"	ΔV1 {deltaV1} km/s")
 st.text(f"	ΔV2 {deltaV2} km/s")
+st.text(f"	ΔV TOTAL {deltaV2_mag+deltaV1_mag} km/s")
 st.text(f"	z={lambert_problem.z_solved:.3f} ")
 
 # Arrow velocity vector orbit 1
