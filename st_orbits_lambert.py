@@ -1,6 +1,7 @@
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
+
 from lamberts_problem import LambertAlgorithm
 from orbit_elements_and_state_vector import compute_elements
 
@@ -332,6 +333,22 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig)
+
+fig2 = go.Figure()
+# Plot F(z) function.
+z_values = np.linspace(-10, 15, 100)
+F_values = [lambert_problem.F_fun(z_value) for z_value in z_values]
+fig2.add_trace(
+    go.Scatter(
+        x=z_values,
+        y=F_values,
+        mode="lines",
+        name="Orbit Transfer",
+        line=dict(color="purple", dash="dash"),
+    )
+)
+st.plotly_chart(fig2)
+
 
 print("done")
 # Add credit sentence
