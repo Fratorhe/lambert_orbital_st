@@ -82,7 +82,6 @@ delta_time = st.sidebar.number_input(
     "Time [s]", min_value=1000, value=10000, step=1000, format="%d"
 )
 
-
 # ORBIT 1
 st.sidebar.header("Orbit 1")
 a1 = st.sidebar.number_input(
@@ -349,7 +348,8 @@ fig2.add_trace(
 )
 st.plotly_chart(fig2)
 
-
+print(r1_vec)
+print(r2_vec)
 print("done")
 # Add credit sentence
 st.markdown(

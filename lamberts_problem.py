@@ -98,14 +98,11 @@ class LambertAlgorithm:
                 np.sqrt(self.y_fun(z)) + self.A * np.sqrt(1 / 2 / self.y_fun(z))
             )
 
-        first_summand = (
-            (self.y_fun(z) / stumpff_C(z)) ** 3
-            / 2
-            * (
-                (1 / 2 / z) * (stumpff_C(z) - 3 / 2 * stumpff_S(z) / stumpff_C(z))
-                + 3 / 4 * stumpff_S(z) ** 2 / stumpff_C(z)
-            )
+        first_summand = (self.y_fun(z) / stumpff_C(z)) ** (3 / 2) * (
+            (1 / 2 / z) * (stumpff_C(z) - 3 / 2 * stumpff_S(z) / stumpff_C(z))
+            + 3 / 4 * stumpff_S(z) ** 2 / stumpff_C(z)
         )
+        print("first_summand", first_summand)
         second_summand = (
             self.A
             / 8
@@ -114,12 +111,43 @@ class LambertAlgorithm:
                 + self.A * np.sqrt(stumpff_C(z) / self.y_fun(z))
             )
         )
+        print("second_summand", second_summand)
+
         return first_summand + second_summand
 
+    # def solve_z(self, z0):
+    #     print("Iterative solver for z")
+    #     zsol = fsolve(self.F_fun, z0, fprime=self.F_fun_prime)
+    #     self.z_solved = zsol[0]  # save the solution for later use in other methods
+    #     print("Iterative solver finished")
+    #     return self.z_solved
+
     def solve_z(self, z0):
-        print("Iterative solver for z")
-        zsol = fsolve(self.F_fun, z0, fprime=self.F_fun_prime)
-        self.z_solved = zsol[0]  # save the solution for later use in other methods
+        print(f"Iterative solver for z, initial guess: {z0}")
+        z0 = 10
+        z0_old = z0 + 1
+        tol = 1e-8
+        max_iter = 10000
+        count = 0
+        alpha = 1  # step scaling factor
+
+        while abs(z0 - z0_old) > tol and count < max_iter:
+
+            f = self.F_fun(z0)
+            df = self.F_fun_prime(z0)
+            if abs(df) < 1e-12:
+                raise ZeroDivisionError("Derivative near zero. Newton-Raphson may fail.")
+            z0_old = z0
+            z0 = z0 - alpha * f / df
+            print(f"Iteration {count}: z0 = {z0}")
+            alpha = min(1e5, max(1.0, 1.0 / abs(df)))
+            print(f"Alpha: {alpha}")
+            count += 1
+
+        if count == max_iter:
+            print("Warning: Newton-Raphson did not converge")
+
+        self.z_solved = z0
         print("Iterative solver finished")
         return self.z_solved
 
@@ -154,6 +182,7 @@ if __name__ == "__main__":
     # # EXERCISE 21.3.1 Morano
     # r1_vec = [4700, 9000, 2700]
     # r2_vec = [-24600, 3500, 6000]
+
     # l = LambertAlgorithm(
     #     r1_vec, r2_vec, delta_time=2 * 60 * 60, mu=3.986e5, prograde=True
     # )
@@ -170,13 +199,18 @@ if __name__ == "__main__":
 
     # EXERCISE 21.4.1 Morano
 
-    z = -2
-    print(stumpff_S(z))
-    print(stumpff_C(z))
+    # z = -2
+    # print(stumpff_S(z))
+    # print(stumpff_C(z))
 
-    r1_vec = [5657.83, 9799.64, 0]
-    r2_vec = [-18290.7, -2776.45, 0]
-    delta_time = 4200
+    # r1_vec = [5657.83, 9799.64, 0]
+    # r2_vec = [-18290.7, -2776.45, 0]
+    # delta_time = 4200
+
+    r1_vec = [7158.52, 2464.87, 0.0]
+    r2_vec = [-28103.48, -31212.08, 0.0]
+    delta_time = 6 * 3600
+
     l = LambertAlgorithm(r1_vec, r2_vec, delta_time=delta_time, mu=3.986e5, prograde=True)
     print(f"Angle theta (in degrees): {l.delta_theta_degree}")
     print(f"A is: {l.A}")
@@ -185,9 +219,9 @@ if __name__ == "__main__":
     print(f"{l.F_fun_prime(2)=}")
     print(f"{l.y_fun(2)=}")
 
-    print(f"{l.F_fun(0)=}")
-    print(f"{l.F_fun_prime(0)=}")
-    print(f"{l.y_fun(0)=}")
+    # print(f"{l.F_fun(0)=}")
+    # print(f"{l.F_fun_prime(0)=}")
+    # print(f"{l.y_fun(0)=}")
 
     v1, v2 = l.solve_it()
     print(f"Velocity in 1 is {v1}")
